@@ -1,0 +1,83 @@
+`torch_dtype` is deprecated! Use `dtype` instead!
+Loading model: google/medgemma-1.5-4b-it...
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards:  50%|█████     | 1/2 [00:41<00:41, 41.49s/it]Loading checkpoint shards: 100%|██████████| 2/2 [00:54<00:00, 24.97s/it]Loading checkpoint shards: 100%|██████████| 2/2 [00:54<00:00, 27.45s/it]
+Setting `pad_token_id` to `eos_token_id`:1 for open-end generation.
+Traceback (most recent call last):
+  File "/u/amo-d1/grad/mha361/anaconda3/lib/python3.9/runpy.py", line 197, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/u/amo-d1/grad/mha361/anaconda3/lib/python3.9/runpy.py", line 87, in _run_code
+    exec(code, run_globals)
+  File "/homes/mha361/work/med/src/interpretability/run_suite.py", line 145, in <module>
+    main()
+  File "/homes/mha361/work/med/src/interpretability/run_suite.py", line 67, in main
+    res = ig_wrapper.interpret(prompt, target_label_idx=target_id, n_steps=10) # Low steps for speed testing
+  File "/homes/mha361/work/med/src/interpretability/feature_importance/integrated_gradients.py", line 90, in interpret
+    attributions, delta = lig.attribute(
+  File "/homes/mha361/work/med/.venv/lib/python3.9/site-packages/captum/log/dummy_log.py", line 39, in wrapper
+    return func(*args, **kwargs)
+  File "/homes/mha361/work/med/.venv/lib/python3.9/site-packages/captum/attr/_core/layer/layer_integrated_gradients.py", line 521, in attribute
+    inputs_layer = _forward_layer_eval(
+  File "/homes/mha361/work/med/.venv/lib/python3.9/site-packages/captum/_utils/gradient.py", line 210, in _forward_layer_eval
+    return _forward_layer_eval_with_neuron_grads(
+  File "/homes/mha361/work/med/.venv/lib/python3.9/site-packages/captum/_utils/gradient.py", line 506, in _forward_layer_eval_with_neuron_grads
+    saved_layer = _forward_layer_distributed_eval(
+  File "/homes/mha361/work/med/.venv/lib/python3.9/site-packages/captum/_utils/gradient.py", line 339, in _forward_layer_distributed_eval
+    output = _run_forward(
+  File "/homes/mha361/work/med/.venv/lib/python3.9/site-packages/captum/_utils/common.py", line 588, in _run_forward
+    output = forward_func(
+  File "/homes/mha361/work/med/src/interpretability/feature_importance/integrated_gradients.py", line 31, in _forward_func
+    outputs = self.model(inputs_embeds=inputs_embeds, attention_mask=attention_mask)
+  File "/homes/mha361/work/med/.venv/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1773, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/homes/mha361/work/med/.venv/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1784, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/homes/mha361/work/med/.venv/lib/python3.9/site-packages/transformers/models/gemma3/modeling_gemma3.py", line 1100, in forward
+    outputs = self.model(
+  File "/homes/mha361/work/med/.venv/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1773, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/homes/mha361/work/med/.venv/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1784, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/homes/mha361/work/med/.venv/lib/python3.9/site-packages/transformers/utils/generic.py", line 918, in wrapper
+    output = func(self, *args, **kwargs)
+  File "/homes/mha361/work/med/.venv/lib/python3.9/site-packages/transformers/models/gemma3/modeling_gemma3.py", line 957, in forward
+    outputs = self.language_model(
+  File "/homes/mha361/work/med/.venv/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1773, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/homes/mha361/work/med/.venv/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1784, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/homes/mha361/work/med/.venv/lib/python3.9/site-packages/transformers/utils/generic.py", line 1072, in wrapper
+    outputs = func(self, *args, **kwargs)
+  File "/homes/mha361/work/med/.venv/lib/python3.9/site-packages/transformers/models/gemma3/modeling_gemma3.py", line 570, in forward
+    layer_outputs = decoder_layer(
+  File "/homes/mha361/work/med/.venv/lib/python3.9/site-packages/transformers/modeling_layers.py", line 94, in __call__
+    return super().__call__(*args, **kwargs)
+  File "/homes/mha361/work/med/.venv/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1773, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/homes/mha361/work/med/.venv/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1784, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/homes/mha361/work/med/.venv/lib/python3.9/site-packages/transformers/utils/deprecation.py", line 172, in wrapped_func
+    return func(*args, **kwargs)
+  File "/homes/mha361/work/med/.venv/lib/python3.9/site-packages/transformers/models/gemma3/modeling_gemma3.py", line 374, in forward
+    hidden_states = self.input_layernorm(hidden_states)
+  File "/homes/mha361/work/med/.venv/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1773, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/homes/mha361/work/med/.venv/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1784, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/homes/mha361/work/med/.venv/lib/python3.9/site-packages/transformers/models/gemma3/modeling_gemma3.py", line 139, in forward
+    output = output * (1.0 + self.weight.float())
+RuntimeError: The size of tensor a (213) must match the size of tensor b (2560) at non-singleton dimension 1
+
+==================================================
+1. Feature Importance (Integrated Gradients)
+==================================================
+Analyzing sample ID: TCGA-EJ-A7NN
+Generated: ### Instruction:
+Analyze the report.
+
+### Input:
+[D:4027496E-5E84-4502-BD86-980339AD9896. FINAL DIAGNOSIS: PART 1: LYMPH NODES, RIGHT PELVIC, EXCISION -. A. METASTATIC TUMOUR IS PRESENT IN THREE OUT OF TWELVE LYMPH NODES (3/12) EXAMINED. B. LARGEST METATSTATIC FOCUS MEASURES 0.4CM. C. EXTRACAPSULAR EXTENSION IS NOT IDENTIFIED. PART 2: LYMPH NODES, LEFT PELVIC, EXCISION -. NO EVIDENCE OF NEOPLASIA IN THIRTEEN (0/13) LYMPH NODES EXAMINED. PART 3: PROSTATE AND BILATERAL SEMINAL VESICLES, RADICAL PROSTATECTOMY -. A. INVASIVE MODERATELY DIFFERENTIA
+
+### Response:
+The report indicates that a
+Interpreting for target token ID: 818 ('The')
+DEBUG: inputs_embeds.shape=torch.Size([1, 213]), attention_mask.shape=torch.Size([1, 213])

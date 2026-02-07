@@ -1,0 +1,30 @@
+
+# Environment
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
+
+# Data
+*.csv
+*.parquet
+*.pt
+*.bin
+*.safetensors
+artifacts/
+reports/
+data/
+
+# Logs
+wandb/
+*.log
+
+# Secrets
+hf_tokken.txt
+.env
