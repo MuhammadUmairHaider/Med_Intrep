@@ -1,3 +1,5 @@
+import os
+
 import torch
 from datasets import Dataset
 from peft import LoraConfig
@@ -5,6 +7,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 from trl import SFTConfig, SFTTrainer
 
 from dataset import load_data
+from model_utils import get_latest_checkpoint
 
 # Model from Hugging Face hub
 model_name = "google/medgemma-1.5-4b-it"
@@ -94,7 +97,19 @@ def main():
         formatting_func=format_instruction,
     )
 
-    trainer.train()
+    # Check for existing checkpoints to resume from
+    checkpoint_dir = "./checkpoints"
+    latest_checkpoint = get_latest_checkpoint(
+        base_model_id=model_name, checkpoint_dir=checkpoint_dir
+    )
+
+    # Resume from checkpoint if one exists (path != base model name)
+    if latest_checkpoint != model_name and os.path.exists(latest_checkpoint):
+        print(f"Resuming training from checkpoint: {latest_checkpoint}")
+        trainer.train(resume_from_checkpoint=latest_checkpoint)
+    else:
+        print("Starting training from scratch...")
+        trainer.train()
 
     print("Saving model...")
     trainer.model.save_pretrained("./final_medgemma_model")

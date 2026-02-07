@@ -20,6 +20,8 @@ __pycache__/
 artifacts/
 reports/
 data/
+checkpoints/
+final_medgemma_model/
 
 # Logs
 wandb/
