@@ -1,11 +1,12 @@
-
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 model_id = "google/medgemma-1.5-4b-it"
 print(f"Loading {model_id}...")
 tokenizer = AutoTokenizer.from_pretrained(model_id)
-model = AutoModelForCausalLM.from_pretrained(model_id, torch_dtype=torch.bfloat16, device_map="auto")
+model = AutoModelForCausalLM.from_pretrained(
+    model_id, torch_dtype=torch.bfloat16, device_map="auto"
+)
 
 text = "Test input for debugging."
 inputs = tokenizer(text, return_tensors="pt").to(model.device)

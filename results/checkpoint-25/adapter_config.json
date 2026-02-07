@@ -27,14 +27,14 @@
   "target_modules": [
     "gate_proj",
     "down_proj",
-    "fc1",
-    "fc2",
-    "k_proj",
-    "v_proj",
     "o_proj",
-    "q_proj",
+    "fc1",
+    "k_proj",
     "out_proj",
-    "up_proj"
+    "fc2",
+    "up_proj",
+    "q_proj",
+    "v_proj"
   ],
   "target_parameters": null,
   "task_type": "CAUSAL_LM",

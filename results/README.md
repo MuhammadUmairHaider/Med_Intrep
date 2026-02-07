@@ -27,7 +27,7 @@ print(output["generated_text"])
 
 ## Training procedure
 
-[<img src="https://raw.githubusercontent.com/wandb/assets/main/wandb-github-badge-28.svg" alt="Visualize in Weights & Biases" width="150" height="24"/>](https://wandb.ai/multifacetednlp/huggingface/runs/68yomsvl) 
+[<img src="https://raw.githubusercontent.com/wandb/assets/main/wandb-github-badge-28.svg" alt="Visualize in Weights & Biases" width="150" height="24"/>](https://wandb.ai/multifacetednlp/huggingface/runs/z1qtwic3) 
 
 
 This model was trained with SFT.

@@ -1,7 +1,7 @@
+import inspect
 
 import trl
-import inspect
-from trl import SFTTrainer, SFTConfig
+from trl import SFTConfig, SFTTrainer
 
 print(f"TRL version: {trl.__version__}")
 
