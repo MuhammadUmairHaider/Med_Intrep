@@ -1,9 +1,10 @@
 import os
-from typing import Dict
+from typing import Dict, List, Tuple
 
 import joblib
 import numpy as np
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, classification_report
 from sklearn.model_selection import train_test_split
 
 
@@ -25,6 +26,7 @@ class ProbingClassifier:
 
         self.model.fit(X_train, y_train)
 
+        train_acc = self.model.score(X_train, y_train)
         val_acc = self.model.score(X_test, y_val)
 
         return val_acc

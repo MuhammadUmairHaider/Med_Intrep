@@ -2,22 +2,20 @@ import argparse
 import os
 
 import numpy as np
+import pandas as pd
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from src.dataset import load_data
 from src.interpretability.attention.visualization import (
-    get_attention_weights,
-    plot_attention_heatmap,
-)
-from src.interpretability.feature_importance.integrated_gradients import LLMIsDefault
+    get_attention_weights, plot_attention_heatmap)
+from src.interpretability.feature_importance.integrated_gradients import \
+    LLMIsDefault
 from src.interpretability.latent_analysis.clustering import compute_tsne
 from src.interpretability.latent_analysis.probing import ProbingClassifier
-from src.interpretability.viz.utils import (
-    plot_latent_space,
-    plot_text_heatmap,
-    plot_token_importance,
-)
+from src.interpretability.viz.utils import (plot_latent_space,
+                                            plot_text_heatmap,
+                                            plot_token_importance)
 from src.model_utils import get_latest_checkpoint
 
 
@@ -55,11 +53,35 @@ def main():
     if "checkpoints" not in model_id and os.path.exists("checkpoints"):
         model_id = get_latest_checkpoint(args.model_id, checkpoint_dir="checkpoints")
 
+    print(f"Loading tokenizer from base model: {args.model_id}...")
+    tokenizer = AutoTokenizer.from_pretrained(args.model_id)
+
     print(f"Loading model: {model_id}...")
-    tokenizer = AutoTokenizer.from_pretrained(model_id)
-    model = AutoModelForCausalLM.from_pretrained(
-        model_id, dtype=torch.bfloat16, device_map="auto", attn_implementation="eager"
-    )
+    # Check if model_id is a PEFT adapter (contains adapter_config.json)
+    is_adapter = False
+    if os.path.isdir(model_id) and "adapter_config.json" in os.listdir(model_id):
+        is_adapter = True
+
+    if is_adapter:
+        from peft import PeftModel
+
+        print(
+            f"Detected PEFT adapter at {model_id}. Loading base model {args.model_id} first..."
+        )
+        base_model = AutoModelForCausalLM.from_pretrained(
+            args.model_id,
+            dtype=torch.bfloat16,
+            device_map="auto",
+            attn_implementation="eager",
+        )
+        model = PeftModel.from_pretrained(base_model, model_id)
+    else:
+        model = AutoModelForCausalLM.from_pretrained(
+            model_id,
+            dtype=torch.bfloat16,
+            device_map="auto",
+            attn_implementation="eager",
+        )
     model.gradient_checkpointing_enable()
     model.eval()
 
@@ -131,7 +153,7 @@ def main():
         tsne_emb = compute_tsne(activations, perplexity=min(5, len(samples) - 1))
         plot_latent_space(
             tsne_emb,
-            labels=["Kidney" if label == 1 else "Other" for label in labels_kidney],
+            labels=["Kidney" if l == 1 else "Other" for l in labels_kidney],
             method="t-SNE",
             save_path=os.path.join(args.output_dir, "tsne_activations.png"),
         )

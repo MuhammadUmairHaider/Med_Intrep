@@ -1,5 +1,8 @@
+import os
+
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import (AutoModelForCausalLM, AutoTokenizer,
+                          BitsAndBytesConfig)
 
 model_id = "google/medgemma-1.5-4b-it"
 

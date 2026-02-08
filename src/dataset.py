@@ -39,7 +39,7 @@ class CancerDataset(Dataset):
         }
 
 
-def load_data(filepath, test_size=0.2, val_size=0.1, random_state=42):
+def load_data(filepath, test_size=0.2, val_size=0.01, random_state=42):
     df = pd.read_csv(filepath)
     # Basic cleaning if necessary (e.g. dropna)
     df = df.dropna(subset=["text", "cancer_type"])
@@ -60,6 +60,8 @@ def load_data(filepath, test_size=0.2, val_size=0.1, random_state=42):
 if __name__ == "__main__":
     # Test the dataset loading
     try:
+        from transformers import AutoTokenizer
+
         print("Loading data...")
         train, val, test = load_data("../tcga_reports_valid.csv")
         print(f"Train size: {len(train)}")

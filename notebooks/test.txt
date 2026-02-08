@@ -1,0 +1,11 @@
+File ~/work/med/.venv/lib/python3.9/site-packages/IPython/core/display.py:426, in HTML.__init__.<locals>.warn()
+    420     return False
+    422 #
+    423 # Avoid calling lower() on the entire data, because it could be a
+    424 # long string and we're only interested in its beginning and end.
+    425 #
+--> 426 prefix = data[:10].lower()
+    427 suffix = data[-10:].lower()
+    428 return prefix.startswith("<iframe ") and suffix.endswith("</iframe>")
+
+TypeError: 'HTML' object is not subscriptable

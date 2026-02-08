@@ -1,69 +1,128 @@
 import argparse
+import os
+# Add parent directory to path to import src modules if needed
+import sys
 
+import joblib
+import numpy as np
+import pandas as pd
 import torch
-from peft import PeftModel
-from sklearn.metrics import classification_report
-from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
+from datasets import Dataset
+from peft import PeftConfig, PeftModel
+from sklearn.metrics import accuracy_score, f1_score
+from transformers import (AutoModelForSequenceClassification, AutoTokenizer,
+                          DataCollatorWithPadding, Trainer, TrainingArguments)
 
-from src.dataset import load_data
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-model_id = "google/medgemma-1.5-4b-it"
-
-
-def evaluate(model_path):
-    print(f"Loading base model: {model_id}")
-
-    tokenizer = AutoTokenizer.from_pretrained(model_id)
-    base_model = AutoModelForCausalLM.from_pretrained(
-        model_id, dtype=torch.bfloat16, device_map="auto"
-    )
-
-    print(f"Loading adapter from: {model_path}")
-    model = PeftModel.from_pretrained(base_model, model_path)
-
-    print("Loading test data...")
-    _, _, test_df = load_data("tcga_reports_valid.csv")
-
-    pipe = pipeline(
-        task="text-generation", model=model, tokenizer=tokenizer, max_length=512
-    )
-
-    predictions = []
-    true_labels = []
-
-    print("Running inference...")
-    for i, row in test_df.iterrows():
-        text = row["text"]
-        label = row["cancer_type"]
-
-        prompt = f"### Instruction:\nAnalyze the following medical report and classify the cancer type.\n\n### Input:\n{text}\n\n### Response:\n"
-
-        # Determine strict generation kwargs to avoid lengthy outputs
-        result = pipe(f"<s>{prompt}", max_new_tokens=20, return_full_text=False)
-        pred_text = result[0]["generated_text"].strip()
-
-        # Simple extraction logic (might need refinement based on model output style)
-        # Assuming the model outputs just the class name or starts with it
-        pred_class = pred_text.split("\n")[0].strip()
-
-        predictions.append(pred_class)
-        true_labels.append(label)
-
-        if i % 10 == 0:
-            print(f"Processed {i}/{len(test_df)}")
-
-    print("\nClassification Report:")
-    print(classification_report(true_labels, predictions))
+from dataset import load_data
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
+def compute_metrics(eval_pred):
+    logits, labels = eval_pred
+    predictions = np.argmax(logits, axis=-1)
+    acc = accuracy_score(labels, predictions)
+    f1 = f1_score(labels, predictions, average="weighted")
+    return {"accuracy": acc, "f1": f1}
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Evaluate Med-Gemma Classifier")
     parser.add_argument(
         "--model_path",
         type=str,
-        default="./final_medgemma_model",
-        help="Path to the fine-tuned model",
+        required=True,
+        help="Path to the fine-tuned model checkpoint",
     )
+    parser.add_argument(
+        "--data_path",
+        type=str,
+        default="tcga_reports_valid.csv",
+        help="Path to dataset CSV",
+    )
+    parser.add_argument(
+        "--base_model",
+        type=str,
+        default="google/medgemma-1.5-4b-it",
+        help="Base model name",
+    )
+    parser.add_argument("--batch_size", type=int, default=8, help="Batch size")
+
     args = parser.parse_args()
 
-    evaluate(args.model_path)
+    # Load Label Encoder
+    le_path = os.path.join(args.model_path, "label_encoder.joblib")
+    if not os.path.exists(le_path):
+        # Try looking in parent/sibling dirs or just default location
+        le_path = "checkpoints/classifier_run/label_encoder.joblib"  # fallback
+
+    if not os.path.exists(le_path):
+        print(
+            f"Warning: label_encoder.joblib not found at {le_path}. evaluation might fail if classes don't match."
+        )
+        return
+
+    label_encoder = joblib.load(le_path)
+    class_names = label_encoder.classes_.tolist()
+    num_labels = len(class_names)
+    print(f"Loaded {num_labels} classes: {class_names}")
+
+    # Load Data (Only Test Split)
+    _, _, test_df = load_data(args.data_path)
+    test_df["label"] = label_encoder.transform(test_df["cancer_type"])
+    test_ds = Dataset.from_pandas(test_df[["text", "label"]])
+
+    # Load Tokenizer
+    tokenizer = AutoTokenizer.from_pretrained(args.base_model, trust_remote_code=True)
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+
+    def preprocess_function(examples):
+        return tokenizer(
+            examples["text"], truncation=True, max_length=512, padding=False
+        )
+
+    test_ds = test_ds.map(preprocess_function, batched=True)
+
+    # Load Model
+    print(f"Loading base model {args.base_model}...")
+    base_model = AutoModelForSequenceClassification.from_pretrained(
+        args.base_model,
+        num_labels=num_labels,
+        id2label={i: c for i, c in enumerate(class_names)},
+        label2id={c: i for i, c in enumerate(class_names)},
+        torch_dtype=torch.bfloat16,
+        device_map="auto",
+        trust_remote_code=True,
+    )
+    base_model.config.pad_token_id = tokenizer.pad_token_id
+
+    print(f"Loading adapter from {args.model_path}...")
+    model = PeftModel.from_pretrained(base_model, args.model_path)
+
+    # Trainer for Evaluation
+    training_args = TrainingArguments(
+        output_dir="./results",
+        per_device_eval_batch_size=args.batch_size,
+        report_to="none",
+        bf16=True,
+    )
+
+    data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
+
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        eval_dataset=test_ds,
+        tokenizer=tokenizer,
+        data_collator=data_collator,
+        compute_metrics=compute_metrics,
+    )
+
+    print("Evaluating...")
+    metrics = trainer.evaluate()
+    print("Evaluation Results:", metrics)
+
+
+if __name__ == "__main__":
+    main()

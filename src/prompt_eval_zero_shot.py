@@ -1,3 +1,6 @@
+import os
+
+import pandas as pd
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
@@ -21,24 +24,15 @@ def run_prompt_eval():
 
     prompts_templates = {
         "cancer_type": {
-            "prompt": (
-                "### Instruction:\nClassify the cancer type (e.g., BRCA, GBM, OV, KIRC) from the report. "
-                "Output ONLY the code.\n\n### Input:\n{text}\n\n### Response:\n"
-            ),
+            "prompt": "### Instruction:\nClassify the cancer type (e.g., BRCA, GBM, OV, KIRC) from the report. Output ONLY the code.\n\n### Input:\n{text}\n\n### Response:\n",
             "target_col": "cancer_type",
         },
         "icd_site": {
-            "prompt": (
-                "### Instruction:\nIdentify the primary tumor site ICD-O-3 code (e.g., C50.9, C61.9) from the report. "
-                "Output ONLY the code.\n\n### Input:\n{text}\n\n### Response:\n"
-            ),
+            "prompt": "### Instruction:\nExtract the ICD-O-3 Site code (e.g., C50.9) from the text. Output ONLY the code.\n\n### Input:\n{text}\n\n### Response:\n",
             "target_col": "icd_o_3_site",
         },
         "icd_histology": {
-            "prompt": (
-                "### Instruction:\nIdentify the diagnosis ICD-O-3 histology code (e.g., 8500/3, 8140/3) "
-                "from the report. Output ONLY the code.\n\n### Input:\n{text}\n\n### Response:\n"
-            ),
+            "prompt": "### Instruction:\nExtract the ICD-O-3 Histology code (e.g., 8500/3) from the text. Output ONLY the code.\n\n### Input:\n{text}\n\n### Response:\n",
             "target_col": "icd_o_3_histology",
         },
     }
