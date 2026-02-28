@@ -13,6 +13,7 @@ __pycache__/
 
 # Data
 *.csv
+!tcga_reports_valid.csv
 *.parquet
 *.pt
 *.bin
