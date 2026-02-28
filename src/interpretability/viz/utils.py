@@ -47,9 +47,175 @@ def plot_token_importance(
     df["Sign"] = df["Score"].apply(lambda x: "Positive" if x > 0 else "Negative")
 
     # Filter out special/boring tokens
+    # Filter out special/boring tokens
     ignore_tokens = ["<bos>", "<eos>", "<pad>", "<unk>", "<space>", "", " "]
-    df = df[~df["Token"].isin(ignore_tokens)]
 
+    # Common English stop words and punctuation (to avoid single punctuation marks)
+    stop_words = {
+        "i",
+        "me",
+        "my",
+        "myself",
+        "we",
+        "our",
+        "ours",
+        "ourselves",
+        "you",
+        "your",
+        "yours",
+        "yourself",
+        "yourselves",
+        "he",
+        "him",
+        "his",
+        "himself",
+        "she",
+        "her",
+        "hers",
+        "herself",
+        "it",
+        "its",
+        "itself",
+        "they",
+        "them",
+        "their",
+        "theirs",
+        "themselves",
+        "what",
+        "which",
+        "who",
+        "whom",
+        "this",
+        "that",
+        "these",
+        "those",
+        "am",
+        "is",
+        "are",
+        "was",
+        "were",
+        "be",
+        "been",
+        "being",
+        "have",
+        "has",
+        "had",
+        "having",
+        "do",
+        "does",
+        "did",
+        "doing",
+        "a",
+        "an",
+        "the",
+        "and",
+        "but",
+        "if",
+        "or",
+        "because",
+        "as",
+        "until",
+        "while",
+        "of",
+        "at",
+        "by",
+        "for",
+        "with",
+        "about",
+        "against",
+        "between",
+        "into",
+        "through",
+        "during",
+        "before",
+        "after",
+        "above",
+        "below",
+        "to",
+        "from",
+        "up",
+        "down",
+        "in",
+        "out",
+        "on",
+        "off",
+        "over",
+        "under",
+        "again",
+        "further",
+        "then",
+        "once",
+        "here",
+        "there",
+        "when",
+        "where",
+        "why",
+        "how",
+        "all",
+        "any",
+        "both",
+        "each",
+        "few",
+        "more",
+        "most",
+        "other",
+        "some",
+        "such",
+        "no",
+        "nor",
+        "not",
+        "only",
+        "own",
+        "same",
+        "so",
+        "than",
+        "too",
+        "very",
+        "s",
+        "t",
+        "can",
+        "will",
+        "just",
+        "don",
+        "should",
+        "now",
+        ".",
+        ",",
+        ";",
+        ":",
+        "!",
+        "?",
+        "-",
+        "_",
+        "(",
+        ")",
+        "[",
+        "]",
+        "{",
+        "}",
+        '"',
+        "'",
+        "`",
+        "patient",
+        "report",
+        "clinical",
+        "history",
+        "diagnosis",  # Medical noise words? Maybe keep diagnoses.
+        "study",
+        "case",
+        "review",
+        "summary",
+        "finding",
+        "findings",
+    }
+
+    # Custom stop words specific to this task (like report headers)
+    # Filter based on cleaned token
+    df = df[~df["Token"].isin(ignore_tokens)]
+    df = df[~df["Token"].str.lower().isin(stop_words)]
+
+    # Also filter out very short tokens (1 char) unless they are numbers
+    df = df[df["Token"].apply(lambda x: len(x) > 1 or x.isdigit())]
     # Define Palette
     palette = {"Positive": "#d62728", "Negative": "#1f77b4"}
 
@@ -259,3 +425,65 @@ def plot_latent_space_interactive(
         fig.write_html(save_path)
 
     fig.show()
+
+
+def plot_adversarial_patching(
+    tokens: List[str],
+    scores: List[float],  # 1.0 for kept, 0.0 for patched
+    title: str = "Adversarial Patching (Minimal Token Subset)",
+    save_path: Optional[str] = None,
+):
+    """
+    Renders text showing which tokens were kept (essential) and which were patched (removed).
+    Kept tokens are highlighted, patched tokens are grayed out.
+    """
+    html_content = (
+        f"<div style='border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 8px; background-color: #f9f9f9; font-family: monospace;'>"
+        f"<h3 style='margin-top: 0; color: #333;'>{title}</h3>"
+        # Legend
+        f"<div style='display: flex; gap: 10px; margin-bottom: 15px; font-size: 0.9em; color: #444;'>"
+        f"  <div style='display: flex; align-items: center;'><span style='display: inline-block; width: 15px; height: 15px; background-color: #d4edda; border: 1px solid #c3e6cb; margin-right: 5px; border-radius: 3px;'></span> Kept (Essential)</div>"
+        f"  <div style='display: flex; align-items: center;'><span style='display: inline-block; width: 15px; height: 15px; background-color: #e2e3e5; border: 1px solid #d6d8db; margin-right: 5px; border-radius: 3px;'></span> Patched (Removed)</div>"
+        f"</div>"
+        f"<p style='font-size: 0.8em; color: #666; margin-bottom: 10px;'>This shows the minimal subset of tokens required to maintain the model's prediction.</p>"
+        f"<div style='font-family: monospace; line-height: 1.8; font-size: 1.1em; white-space: pre-wrap; background-color: white; padding: 15px; border-radius: 5px; border: 1px solid #eee; color: #000;'>"
+    )
+
+    for token, score in zip(tokens, scores):
+        # Robust Token Cleaning
+        display_token = (
+            token.replace(" ", " ")
+            .replace("Ġ", " ")
+            .replace("\u2581", " ")
+            .replace("<0x0A>", "\n")
+        )
+
+        if display_token == "\n":
+            html_content += "<br/>"
+            continue
+
+        if score > 0.5:
+            # Kept Token: Light green background, dark text
+            style = "background-color: #d4edda; color: #155724; padding: 2px 4px; margin: 0 1px; border-radius: 3px; font-weight: bold;"
+            title_attr = "Kept (Essential)"
+        else:
+            # Patched Token: Gray background, grayed out text
+            style = "background-color: #e2e3e5; color: #6c757d; padding: 2px 4px; margin: 0 1px; border-radius: 3px;"
+            title_attr = "Patched (Removed)"
+
+        html_content += (
+            f"<span style='{style}' title='{title_attr}'>{display_token}</span>"
+        )
+
+    html_content += "</div></div>"
+
+    if save_path:
+        with open(save_path, "w") as f:
+            f.write(html_content)
+
+    try:
+        from IPython.display import HTML, display
+
+        display(HTML(html_content))
+    except ImportError:
+        print(html_content)
