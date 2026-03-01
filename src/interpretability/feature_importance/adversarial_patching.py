@@ -35,7 +35,7 @@ class AdversarialPatchingExplainer:
         lr_lambda: float = 0.01,
         initial_lambda: float = 1.0,
         sparsity_weight: float = 1.0,
-        completeness_weight: float = 1.0,
+        completeness_weight: float = 0.0,
         baseline_type: str = "unk",
         use_task_loss: bool = True,
     ) -> Dict[str, Any]:
@@ -203,10 +203,16 @@ class AdversarialPatchingExplainer:
             if completeness_weight > 0.0:
                 M_complement = 1.0 - M_expanded
                 E_complement = M_complement * E_orig + (1.0 - M_complement) * E_base
-                outputs_complement = self.model(inputs_embeds=E_complement, attention_mask=attention_mask)
+                outputs_complement = self.model(
+                    inputs_embeds=E_complement, attention_mask=attention_mask
+                )
                 logits_complement = outputs_complement.logits
-                probs_uniform = torch.ones_like(logits_complement) / logits_complement.shape[-1]
-                loss_completeness = F.cross_entropy(logits_complement.float(), probs_uniform)
+                probs_uniform = (
+                    torch.ones_like(logits_complement) / logits_complement.shape[-1]
+                )
+                loss_completeness = F.cross_entropy(
+                    logits_complement.float(), probs_uniform
+                )
 
             # Sparsity Loss
             loss_sparsity = gate.get_sparsity_loss()
@@ -214,7 +220,11 @@ class AdversarialPatchingExplainer:
             # Total Loss (Lagrangian formulation)
             # Minimize: sparsity + lambda * (task_loss - threshold) + completeness
             # Therefore: L = sparsity_weight * loss_sparsity + lambda_reg * loss_task + completeness_weight * loss_completeness
-            loss = (sparsity_weight * loss_sparsity) + lambda_reg * loss_task + (completeness_weight * loss_completeness)
+            loss = (
+                (sparsity_weight * loss_sparsity)
+                + lambda_reg * loss_task
+                + (completeness_weight * loss_completeness)
+            )
 
             loss.backward()
 
@@ -265,9 +275,15 @@ class AdversarialPatchingExplainer:
                 if completeness_weight > 0.0:
                     eval_M_comp = 1.0 - eval_M_expanded
                     eval_E_comp = eval_M_comp * E_orig + (1.0 - eval_M_comp) * E_base
-                    eval_logits_comp = self.model(inputs_embeds=eval_E_comp, attention_mask=attention_mask).logits
-                    probs_uniform = torch.ones_like(eval_logits_comp) / eval_logits_comp.shape[-1]
-                    eval_loss_completeness = F.cross_entropy(eval_logits_comp.float(), probs_uniform).item()
+                    eval_logits_comp = self.model(
+                        inputs_embeds=eval_E_comp, attention_mask=attention_mask
+                    ).logits
+                    probs_uniform = (
+                        torch.ones_like(eval_logits_comp) / eval_logits_comp.shape[-1]
+                    )
+                    eval_loss_completeness = F.cross_entropy(
+                        eval_logits_comp.float(), probs_uniform
+                    ).item()
 
                 # Update progress bar with current metrics
                 postfix_dict = {
@@ -280,10 +296,8 @@ class AdversarialPatchingExplainer:
                     postfix_dict["comp"] = f"{eval_loss_completeness:.4f}"
                 pbar.set_postfix(postfix_dict)
 
-                if (
-                    eval_loss_task <= kl_threshold
-                    and eval_sparsity_rate > best_sparsity
-                ):
+                is_correct = eval_logits.argmax().item() == target_tensor.item()
+                if is_correct and eval_sparsity_rate > best_sparsity:
                     best_sparsity = eval_sparsity_rate
                     best_mask = eval_M.detach().float().cpu().numpy()
 
