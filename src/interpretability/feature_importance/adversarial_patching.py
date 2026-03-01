@@ -55,10 +55,10 @@ class AdversarialPatchingExplainer:
         attention_mask = encoded.attention_mask.to(self.device)
         seq_len = input_ids.shape[1]
 
-        # 1.5 Map subword tokens to whole words using regex boundaries
+        # 1.5 Map subword tokens to chunks using delimiter boundaries
         offsets = encoded["offset_mapping"][0].cpu().numpy()
         word_spans = [
-            m.span() for m in re.finditer(r"[a-zA-Z0-9]+|[^\w\s]", input_text)
+            m.span() for m in re.finditer(r"[^.,\-:]+[.,\-:]*|[.,\-:]+", input_text)
         ]
 
         token_to_word = []
